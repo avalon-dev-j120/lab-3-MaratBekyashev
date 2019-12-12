@@ -5,19 +5,28 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import java.awt.event.*;
-import static java.awt.Cursor.*;
 
-
-public class Calculator extends JFrame {
+public class Calculator extends JFrame implements ActionListener {
     private JPanel buttonsPane = null;
     private JTextField input = null;
     private JButton equalButton = null;
-    private Double sum = 0d; // промежуточный результат
-    Container pane = null;
+    private Double a = 0d; // first operand
+    private Double b = 0d; // first operand
+    private Double res = 0d;
 
-    int WIDTH = 400, HEIGHT = 400;
+    Container pane = null;
+    final int WIDTH = 400, HEIGHT = 400;
+
+    Double[] buffer = new Double[3];
+    String[] sign = new String[1];
+    ActionListener signListener;
 
     public Calculator() {
+        buffer[0] = 0d;
+        buffer[1] = 0d;
+        buffer[2] = 0d;
+        sign[0] = "+";
+
         this.setTitle("Calculator");
         //this.setResizable(false);
         this.setSize(WIDTH, HEIGHT);
@@ -27,7 +36,6 @@ public class Calculator extends JFrame {
 
         //
         pane = this.getContentPane();
-        // pane.setBounds(20, 20, this.getWidth()-5, this.getHeight()-5); // границы основного пейна от края окна
         pane.setLayout(new GridLayout(3, 1, 50, 20)); // 3 rows, 1 column layout
 
         // INPUT FIELD
@@ -51,6 +59,32 @@ public class Calculator extends JFrame {
                 "4", "5", "6", "-",
                 "7", "8", "9", "*",
                 "CE", "0", ".", "/"};
+        signListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                switch (sign[0]) {
+                    case ("+"):
+                        buffer[0] = buffer[0] + buffer[1];
+                        break;
+                    case ("-"):
+                        buffer[0] = buffer[0] - buffer[1];
+                        break;
+                    case ("*"):
+                        buffer[0] = buffer[0] * buffer[1];
+                        break;
+                    case ("/"):
+                        buffer[0] = buffer[0] / buffer[1];
+                        break;
+                }
+                buffer[2] = 0d;
+                buffer[1] = 0d;
+
+                sign[0] = e.getActionCommand();
+                if (sign[0] == "=") {
+                    buffer[2] = 2d;
+                }
+                input.setText(Double.toString(buffer[0]));
+            }
+        };
 
         for (String caption: keyValues){
            JButton button = new JButton(caption);
@@ -58,29 +92,36 @@ public class Calculator extends JFrame {
             font = font.deriveFont(font.getSize() * 1.5f);
             button.setFont(font);
 
-            // add event listener for each button
-           if (caption.equals("CE"))//  REset button
-               button.addActionListener(new ActionListener() {
-                   public void actionPerformed(ActionEvent e) {
-                     input.setText("");
-                     sum = 0d;
-                   }
-               });
-           else if (caption.equals(".") ) // Decimal point
+           //  CE button
+           if (caption.equals("CE"))
+             button.addActionListener(this::actionPerformed);
+           // Decimal point
+           else if (caption.equals("."))
                button.addActionListener(new ActionListener() {
                    public void actionPerformed(ActionEvent e) {
                        if (!input.getText().contains("."))
                            input.setText(input.getText() + ".");
                    }
                });
-
-           else if (caption.equals("+") || caption.equals("-") || caption.equals("/")|| caption.equals("*")){ // Control buttons
-
-           }
-           else // digit buttons
+           // Обработка арифметических операций
+           else if (caption.equals("+") || caption.equals("-") || caption.equals("/")|| caption.equals("*")) // Control buttons
+               button.addActionListener(signListener);
+           else // обработка ЦИФР
                button.addActionListener(new ActionListener() {
                    public void actionPerformed(ActionEvent e) {
-                     input.setText(input.getText() + e.getActionCommand());
+                       if (buffer[2] == 0) {
+                           input.setText("");
+                           buffer[2] = 1d;
+                       }
+                       if (buffer[2] == 2) {
+                           input.setText("");
+                           buffer[0] = 0d;
+                           buffer[1] = 0d;
+                           sign[0] = "+";
+                           buffer[2] = 1d;
+                       }
+                       input.setText(input.getText() + e.getActionCommand());
+                       buffer[1] = Double.parseDouble(input.getText());
                    }
                });
 
@@ -88,7 +129,6 @@ public class Calculator extends JFrame {
         }
 
         pane.add(this.buttonsPane); // Добавили вторую панель с кнопками
-        //pane.add(new JPanel()); // add filler
         // *************************************************
         //  Добавляем кнопку "Равно"
         JPanel panel = new JPanel();
@@ -97,11 +137,7 @@ public class Calculator extends JFrame {
         equalButton = new JButton("=");
         equalButton.setSize(new Dimension(150, 50));
         equalButton.setBorder(new EmptyBorder(10, 0, 10, 0));
-        equalButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                //
-            }
-        });
+        equalButton.addActionListener(signListener);
 
         panel.add(this.equalButton, BorderLayout.CENTER);
         pane.add(panel);
@@ -109,4 +145,12 @@ public class Calculator extends JFrame {
         //pane.add(new JPanel()); // add filler
 
     }
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        input.setText("");
+        buffer[0] = 0d;
+        buffer[1] = 0d;
+        sign[0] = "+";
+    }
+
 }
